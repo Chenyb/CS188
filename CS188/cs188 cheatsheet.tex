@@ -1,0 +1,293 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[landscape, letterpaper]{geometry}
+\usepackage{ifthen}
+\usepackage{mathtools, amssymb}
+\usepackage{multicol}
+
+\DeclareMathOperator{\corr}{corr}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\var}{var}
+
+% This sets page margins to .5 inch if using letter paper, and to 1cm
+% if using A4 paper. (This probably isn't strictly necessary.)
+% If using another size paper, use default 1cm margins.
+\ifthenelse{\lengthtest { \paperwidth = 11in}}
+	{ \geometry{top=.5in,left=.5in,right=.5in,bottom=.5in} }
+	{\ifthenelse{ \lengthtest{ \paperwidth = 297mm}}
+		{\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+		{\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+	}
+
+% Turn off header and footer
+\pagestyle{empty}
+ 
+
+% Redefine section commands to use less space
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{0mm}%
+                                {-1ex plus -.5ex minus -.2ex}%
+                                {0.5ex plus .2ex}%x
+                                {\normalfont\large\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0mm}%
+                                {-1explus -.5ex minus -.2ex}%
+                                {0.5ex plus .2ex}%
+                                {\normalfont\normalsize\bfseries}}
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{0mm}%
+                                {-1ex plus -.5ex minus -.2ex}%
+                                {1ex plus .2ex}%
+                                {\normalfont\small\bfseries}}
+\makeatother
+
+% Don't print section numbers
+\setcounter{secnumdepth}{0}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt plus 0.5ex}
+
+
+% -----------------------------------------------------------------------
+
+\begin{document}
+
+\linespread{1.6}
+
+\raggedright
+\footnotesize
+\begin{multicols*}{2}
+
+% multicol parameters
+% These lengths are set only within the two main columns
+%\setlength{\columnseprule}{0.25pt}
+\setlength{\premulticols}{1pt}
+\setlength{\postmulticols}{1pt}
+\setlength{\multicolsep}{1pt}
+\setlength{\columnsep}{2pt}
+
+\begin{center}
+     {\Large\textbf{CS188 Midterm1}} \\[1em]
+     {\normalsize Yibing Chen}
+\end{center}
+
+\subsection{MDP}
+- \textbf{Definition}:An MDP is defined by: A set of states $s \in S$, A set of actions $a \in A$, A transition fxn $T(s,a,s')$ $\leftarrow$ probability that a from s leads to s': $P(s' | s, a)$. Also called the model,  A reward fxn $R(s,a,s')$, A start state (or distribution), maybe a terminal state
+
+	Fundamental operation: compute the values (optimal expectimax utilities) of states s. Optimal values define optimal policies!\\
+\begin{itemize}
+\item Define value of a state s: $V^*(s)$= expected utility starting in s and acting optimally
+\item define the value of a q-state (s,a): $Q^*(s,a)$=expected utility starting in s, taking action a and then acting optimally
+\item Define the optimal policy: $\pi^*(s)$ = optimal action from state s
+\end{itemize}
+
+	Bellman Equations: definition of "optimal utility" leads to a simple one-step lookahead relationship amongst optimal utility values: Optimal rewards = maximize over first action and then follow optimal policy:
+$V^*(s) = max_a Q^*(s,a) \quad Q^*(s,a) = \displaystyle\sum_{s'}T(s,a,s')[R(s,a,s')+\gamma V^*(s')]$
+
+	\textbf{Value Estimates: }Calculate estimates $V_k^*(s)$ $\leftarrow$ not the optimal value of s! It's the optimal value considering only next k time steps. As k $\rightarrow\infty$, approaches optimal value
+
+\textbf{Value Iteration}	
+ $V_i^*(s):$the expected discounted sum of rewards accumulated when starting from state s and acting optimally for a horizon of i time steps,  Start with $V_0^*(s)=0$, then $V^*_{i+1}(s)\leftarrow max_a \displaystyle\sum_{s'}T(s,a,s')[R(s,a,s')+\gamma V_i^*(s')] \leftarrow$ this is called a value update. Repeat until convergence. Approximations get refined towards optimal values. Computer optimal values for all states all at once using successive approximations (before you start moving)
+
+	We can also compute the utility of a state s under a fix (general non-optimal) policy. Similar definition for $V^\pi(s)$:
+Solve with modifying Bellman updates.
+		$V_0^\pi(s)=0$
+		Then $V_{i+1}^\pi(s)\leftarrow \displaystyle\sum_{s'}T(s,\pi(s),s')[R(s,\pi(s),s')+\gamma V_i^\pi(s')]$
+		 OR solve it as a linear system
+		 
+\subsection{Policy Iteration}
+	\begin{itemize}
+		\item Step 1: Policy evaluation: calculate utilities for some fixed policy (not optimal utilities!) until convergence
+		\item Step 2: Policy improvement: update policy using one-step look-ahead with resulting converged (but not optimal) utilities as future values
+		\item repeat until policy converges
+	\end{itemize}
+	In value iteration: every pass updates both utilities and policy. In policy iteration: several passes to update utilities with frozen policy with occasional passes to update policies
+
+	For {\bf reinforcement learning} still assume an MDP, but don't know T or R. Don't know which states are good or what the actions do.
+	\begin{itemize}
+		\item Learn the model empirically through experience. Solve for values as if the learned model were correct
+		\item Count outcomes for each s,a . Normalize to give estimate of T(s,a,s'). Discover R(s,a,s') when we experience (s,a,s')
+		\item Model-based RL: first act in MDP and learn the transition model and reward fxn, then run value iteration or policy iteration with the learned models and fxns. Advantage: efficient use of data. Disadvantage: requires building a model for T, R
+		\item Model-free RL: bypass the need to learn the model and fxn! Approaches: direct evaluation, temporal difference learning, q-learning
+	\end{itemize}
+	\textbf{Direct Evaluation: }repeatedly execute the policy $\pi$, estimate the value of the state s as the average over all times the state s was visited of the sum of discounted rewards accumulated from state s onwards. (limitations:) assume random initial state, assumes the value of a state is known perfectly based on past runs.
+\subsection{Temporal Difference Learning}
+	\begin{itemize}
+		\item learn from every experience! Update V(s) each time we experience (s,a,s',r). Likely s' will contribute updates more often
+		\item policy still fixed. Move values toward value of whatever successor occurs: running average.
+		\item Sample of V(s): $sample = R(s,\pi(s),s')+\gamma V^\pi(s')$, Update to V(s): $V^\pi(s)\leftarrow (1-\alpha)V^\pi(s)+(\alpha)\cdot sample$
+		\item Same update: $V^\pi(s)\leftarrow V^\pi(s)+\alpha(sample-V^\pi(s))$ ($\alpha$ is the learning rate)
+		\item If we want to turn values into a new policy we can't do this. Try learning Q-values directly
+	\end{itemize}
+	
+\subsection{Q-value Iteration}
+	\begin{itemize}
+		\item Value iteration: find successive approx optimal values. Start with $V_0(s)=0$. Given $V_i$, calculate the values for all states for depth i+1 $v_{i+1}(s)\leftarrow max_a \displaystyle\sum_{s'}T(s,a,s')[R(s,a,s')+\gamma V_i(s')]$
+		\item But Q-values are more useful! $Q_0(s,a)=0$. Given $Q_i$ calculate q-values for all q-states for depth i+1: $Q_{i+1}(s,a)\leftarrow \displaystyle\sum_{s'}T(s,a,s')[R(s,a,s')+\gamma max_{a'}Q_i(s',a')]$
+	\end{itemize}
+	Q-Learning: sample-based Q-value iteration
+	\begin{itemize}
+		\item Learn $Q^*(s,a)$ values. Receive a sample (s,a,s',r). Consider your old estimate $Q(s,a)$
+		\item New sample estimate: $Q^*(s,a,)=\displaystyle\sum_{s'}T(s,a,s')[R(s,a,s')+\gamma max_{a'}Q^*(s',a')]$ 
+		\item incorporate new estimate into running average: $Q(s,a)\leftarrow (1-\alpha)Q(s,a)+(\alpha)[sample]$ (sample = $R(s,a,s')+\gamma max_{a'}Q(s',a')$)
+		\item Q-learning converges to optimal policy. Learn optimal policy w/o following it
+		\item In realistic situations, we can't learn about every single state, so we generalize: learn about some small number of training states through experience, and generalize that experience to new, similar states
+		\item Feature-based representations are our solution: Features are functions from states to real numbers that capture important properties of the state.
+		Can write a q or value fxn for any state using a few weights: $V(s)=\omega_1f_1(s)+\omega_2f_2(s)+\cdots+\omega_nf_n(s) \quad Q(s,a) = \omega_1f_1(s,a)+\omega_2f_2(s,a)+\cdots+\omega_nf_n(s,a)$
+		\end{itemize}
+
+	Policy search: often feature-based policies that work well aren't the ones that approximate V and Q best. We should learn the policy that maximizes rewards rather than the value that predicts rewards
+	\begin{itemize}
+		\item Start with an initial linear value fxn or Q-fxn
+		\item Nudge each feature weight up and down and see if your policy is better than before
+		\item need to run many sample episodes!
+	\end{itemize}
+	
+\subsection{Chain rule}
+\textbf{Inference by enumeration}: chain rule: $P(X_1,\ldots,X_n)=\displaystyle\prod_{i=1}^nP(x_i|\text{parents}(X_i))$. sum out the hidden variables.
+	\[P(B|j,m)\propto P(B,j,m)=\displaystyle\sum_e \displaystyle\sum_a P(B,j,m,e,a)\]
+	\[=\displaystyle\sum_e	\displaystyle\sum_a	P(b)P(e)P(a|b,e)P(j|a)P(m|a)\]
+	
+\textbf{Variable elimination}: do a calculation once and save it for later use \[P(B,j,m)=\underbrace{P(B)}_{f_1(B)} \displaystyle\sum_e \underbrace{P(e)}_{f_2(E)} \displaystyle\sum_a \underbrace{P(a|B,e)}_{f_3(A,B,E)} \underbrace{P(j|a)}_{f_4(A)} \underbrace{P(m|a)}_{f_5(A)}\] Sum out $A$ from the product of $f_3,f_4,f_5$ to make a new $2\times2$ factor $f_6(B,E)$:\[f_6(B,E) = \displaystyle\sum_a f_3(A,B,E)\times f_4(A)\times f_5(A) =\] \[f_3(a,B,E)\times f_4(a)\times f_5(a) + f_3(\neg a,B,E)\times f_4(\neg a)\times f_5(\neg a)\] Now we have \[P(B,j,m)=f_1(B)\times \displaystyle\sum_e f_2(E)\times f_6(B,E)\] (remember that  if you have an entry $P(A,B)\times P(B,C) \Rightarrow P(A,B,C) = P(A,B)\cdot P(B,C)$)
+\subsection{Probability:}	
+\textbf{Conditional probability:} $P(x|y)=\frac{P(x,y)}{P(y)}=\frac{P(y|x)P(x)}{P(y)}  \quad$ \\
+\textbf{Chain rule:}  $P(X_1,\ldots,X_n)=\displaystyle\prod_{i=1}^nP(x_i|\text{parents}(X_i))\quad$ \\
+$XY|Z$ if $P(x,y|z)=P(x|z)P(y|z)$ or $P(x|y,z)=P(x|z) \text{or} P(y|x,z)=P(y|z)$
+
+\subsection{DBNs}
+	\begin{itemize}
+		\item We want to track multiple variables over time, using multiple sources of evidence. Repeat a fixed Bayes net structure at each time. Variables from time $t$ can condition on those from $t-1$. Discrete valued dynamic Bayes nets are also HMMs
+		\item Exact inference in DBNs: variable elimination applies to dynamic Bayes nets. Procedure: "unroll" the network for T time steps, then eliminate variables until $P(X_t|e_{1:T})$ is computed. Online belief updates: Eliminate all variables from the previous time step; store factors for current time only
+		\item DBN Particle Filters: a particle is a complete sample for a time step. \textbf{Initialize}: Generate prior samples for the $t=1$ Bayes net. \textbf{Elapse time}: sample a successor for each particle
+			\textbf{Observe}: weight each entire sample by the likelihood of the evidence condition on the sample
+	\end{itemize}
+	
+
+\begin{tabular}{| l | r |}\hline
+	n & Number of states in the problem \\ \hline
+	b & the average branching factor (\# of successors) \\ \hline
+	$C^*$ & Cost of least cost solution \\ \hline
+	s & depth of the shallowest solution \\ \hline
+	m & Max depth of the search tree \\ \hline
+	\end{tabular}\\
+\begin{tabular}{| l | l || c | c | c | r |}\hline
+	Algorithm & Modifiers & Complete? & Optimal? & Time & Space \\ \hline
+	DFS && N & N & infinite & infinite \\ \hline
+	DFS & w/ cycle checking & Y & N & $O(b^m)$ & $O(bm)$ \\ \hline
+	BFS && Y & $N^*$ & $O(b^{s+1})$ & $O(b^{s+1})$ \\ \hline
+	ID && Y & $N^*$ & $O(b^{s+1})$ & $O(bs)$ \\ \hline
+	UCS && $Y^*$ & Y & $O(b^{C^*/\epsilon})$ & $O(b^{C^*/\epsilon})$ \\ \hline
+	\end{tabular}
+
+\end{multicols*}
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\documentclass[5pt,twocolumn]{article}
+\usepackage{amsmath,amssymb,fullpage,xypic,graphicx}
+\setlength{\parindent}{0in}
+\begin{document}
+\newcommand{\Perp}{\perp \! \! \! \perp}
+\begin{center}	\scalebox{.5}{%
+\begin{tabular}{| l | r |}\hline
+	n & Number of states in the problem \\ \hline
+	b & the average branching factor (\# of successors) \\ \hline
+	$C^*$ & Cost of least cost solution \\ \hline
+	s & depth of the shallowest solution \\ \hline
+	m & Max depth of the search tree \\ \hline
+	\end{tabular}}\end{center}
+		\begin{center}\scalebox{0.5}{%
+			\begin{tabular}{| l | l || c | c | c | r |}
+			\hline
+	Algorithm & Modifiers & Complete? & Optimal? & Time & Space \\ \hline
+	DFS && N & N & infinite & infinite \\ \hline
+	DFS & w/ cycle checking & Y & N & $O(b^m)$ & $O(bm)$ \\ \hline
+	BFS && Y & $N^*$ & $O(b^{s+1})$ & $O(b^{s+1})$ \\ \hline
+	ID && Y & $N^*$ & $O(b^{s+1})$ & $O(bs)$ \\ \hline
+	UCS && $Y^*$ & Y & $O(b^{C^*/\epsilon})$ & $O(b^{C^*/\epsilon})$ \\ \hline
+
+
+
+
+
+	
+
+
+
+
+
+
+{\bf Likelihood weighting} avoids the inefficiency of rejection sampling by generating only events that are consistent with the evidence e. We fix the values for the evidence var {\bf E} and sample only the nonevidence variables, guaranteeing that each event we generate is consistent with the evidence. Before tallying the counts in the distribution for the query var, we have to weight event by the {\bf likelihood} that the event accords to the evidence, measured by the product of the conditional probabilities for each evidence variable given its parents. Consider the query $P(\text{Rain} | \text{Cloudy=true, WetGrass=true})$ with the ordering Cloudy, Sprinkler, Rain, WetGrass (though any topological ordering will work). First, set weight $w$ to 1.0 then generate an event: \textbf{1.} Cloudy is an evidence var with the value true so we take $w\leftarrow w\cdot P(\text{Cloudy=true})=.5$
+\textbf{2.} Sprinkler is {\bf not} an evidence var, so sample from the distribution so far: $P(\text{Sprinkler}|\text{Cloudy=true})$. Say we get "false" from this sample.
+	\textbf{3.} Rain is not an evidence var, so we sample from $P(\text{Rain}|\text{Cloudy=true})$. say we get "true" from this sample.
+	\textbf{4.}WetGrass {\bf is} an evidence var with the value true, so we adjust the weight again:
+	
+	 $w\leftarrow w\cdot P(\text{WetGrass=true}|\text{Sprinkler=false ,Rain=true})$
+Now we have a weighted sample, the event [true,false,true,true] with a weight $w$ and we tally this in our sample distribution under Rain = true.
+
+{\bf Gibbs sampling}:
+Look at the query $P(\text{Rain}|\text{Sprinkler=true, WetGrass=true})$. Essentially, what we do is set evidence then set al other variables to random values (by prior sampling or uniformly sampling) then choosing a non-evidence variable and sample this variable conditioned on nothing else changing (we generate samples where each sample is different from the previous one by only a single variable). Each state visited during this process is a sample that contributes to the estimate for the query variable Rain. If the process visits 20 states where Rain is true and 60 where Rain is false, then $P(\text{Rain=true})=.25$ and $P(\text{Rain=false})=.75$. 
+
+\textbf{Active triples}: (\emph{active} means it carries information, or dependence)
+	\textbf{1.} $A\rightarrow B\rightarrow C$
+	\textbf{2.} $A\leftarrow B\rightarrow C$
+	\textbf{3.} $A\rightarrow \underline{B}\leftarrow C$
+	\textbf{4.} $A\rightarrow B \leftarrow C : B \rightarrow \underline{D}$
+
+\textbf{Inactive triples}
+	\textbf{1.} $A\rightarrow \underline{B} \rightarrow C$
+	\textbf{2.} $A\leftarrow \underline{B} \rightarrow C$
+	\textbf{3.} $A\rightarrow B \leftarrow C$ 
+
+
+\begin{center}\textsc{hidden markov models}\end{center} 
+	Defined by: initial distribution $P(X_1)$, Transitions $P(X|X_{-1})$ and emissions $P(E|X)$.  Two important independence properties: markov hidden process, future depends on past via the present. Current observation independent of all else given current state.
+	\begin{itemize}
+		\item Passage of Time: Have current belief $P(X|$evidence to date$)$: $B(X_t)=P(X_t|e_{1:t})$
+		
+		After one time step passes: $P(X_{t+1}|e_{1:t})=\displaystyle\sum_{x_t}P(X_{t+1}|x_t)P(x_t|e_{1:t})$, or
+		$B'(X_{t+1})=\displaystyle\sum_{x_t}P(X'|x)B(x_t)$
+		Beliefs get "pushed" through the transitions
+		
+	\item Observation: Have current Belief $P(X|$previous evidence$)$: $B'(X_{t+1})=P(X_{t+1}|e_{1:t})$
+	Then: $P(X_{t+1}|e_{1:t+1})\propto P(e_{t+1}|X_{t+1})P(X_{t+1}|e_{1:t})$, or
+	$B(X_{t+1})\propto P(e|X)B'(X_{t+1})$
+	Beliefs are reweighted by likelihood of all evidence. But unlike passage of time, we have to renormalize.
+	\item Forward algorithm: Given evidence at each time and want to know $B_t(X)=P(X_t|e_{1:t})$, Can derive the following updates: $P(x_t|e_{1:t})\propto P(e_t|x_t)\displaystyle\sum_{x_{t-1}}P(x_t|x_{t-1})P(x_{t-1},e_{1:t-1})$. This is variable elimination in order $X_1,X_2,\ldots$
+	\item Backward algorithm: $P(e_{t+1:N}|x_t)=\displaystyle\sum_{x_{t+1}}P(e_{t+1:N}|x_{t+1})P(x_{t+1}|x_t)$
+	\item Online Belief Updates: for every time step, we start with current $P(X|$evidence$)$. We update for time: $P(x_t|e_{1:t-1})=\displaystyle\sum_{x_{t-1}}P(x_{t-1}|e_{1:t-1})\cdot P(x_t|x_{t-1})$. Then we update for evidence: $P(x_t|e_{1:t})\propto_XP(x_t|e_{1:t-1})\cdot P(e_t|x_t)$. The forward algorithm does both at once (and doesn't normalize)
+	\item Particle filtering (the other inference method for HMMs). Filtering is an approximate solution. Sometimes $X$ is too big to use exact inference. Track samples of X, not all values (samples are called particles)
+
+		 Representation: representation of $P(X)$ is now a list of $N$ particles (samples). Generally, $N<<|X|$. $P(X)$ is approximated by number of particles with value x.
+		
+		 Elapse Time: Each particle is moved by sampling its next position from the transition model: $x'=$sample$(P(X'|x))$. This is like prior sampling -- samples' frequencies reflect the transition probabilities. This captures the passage of time.
+		
+		 Observe: don't sample the observation, we fix it. This is similar to likelihood weighting, so we downweight our samples based on the evidence: 
+		
+		$w(x)=P(e|x) \quad B(X)\propto P(e|X)B'(X)$
+		
+		 Resample: Rather than tracking weighted samples, we resample N times. We choose from our weighted sample distribution (draw w/ replacement). This is equivalent to renormalizing the distribution. Now the update is complete for this time step - continue w/ the next one
+
+	\end{itemize}
+	
+\end{document}
